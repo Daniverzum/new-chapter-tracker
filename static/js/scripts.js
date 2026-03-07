@@ -1438,11 +1438,29 @@ async function fetchHistory(url) {
     },
     body: JSON.stringify({ url }),
   });
-  const payload = await response.json();
+  const payload = await parseResponsePayload(response);
   if (!response.ok) {
-    throw new Error(payload.status || "Unable to load history");
+    throw new Error(
+      payload.error ||
+        payload.message ||
+        payload.status ||
+        `Unable to load history (${response.status})`
+    );
   }
   return payload;
+}
+
+async function parseResponsePayload(response) {
+  const text = await response.text();
+  if (!text) return {};
+  try {
+    return JSON.parse(text);
+  } catch (_error) {
+    return {
+      status: response.statusText || `HTTP ${response.status}`,
+      error: text,
+    };
+  }
 }
 
 async function refreshHistoryModal() {
@@ -1468,9 +1486,14 @@ async function performHistoryAction(action, payload, spinnerMessage) {
       },
       body: JSON.stringify({ url: historyContext.url, ...payload }),
     });
-    const data = await response.json();
+    const data = await parseResponsePayload(response);
     if (!response.ok) {
-      throw new Error(data.error || data.status || "Unable to perform action");
+      throw new Error(
+        data.error ||
+          data.message ||
+          data.status ||
+          `Unable to perform action (${response.status})`
+      );
     }
     await refreshHistoryModal();
     await refreshChapterTables().catch((error) =>

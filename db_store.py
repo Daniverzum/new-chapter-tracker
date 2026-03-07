@@ -475,7 +475,7 @@ class ChapterDatabase:
                 """,
                 (link_id, entry_id),
             ).fetchone()
-        return row
+        return dict(row) if row else None
 
     def delete_history_entry(self, url: str, entry_id: int) -> bool:
         link_id = self._get_link_id(url)
